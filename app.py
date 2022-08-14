@@ -131,11 +131,12 @@ CONSTRAINT_CRYSTAL = m.add_constraint(m.sum([CrystalsCritical]) == 2, ctname='ea
 
 # goal:
 m.set_multi_objective('min', [264*StimsAccuracy + 554*EnhancementsAccuracy + 130*AugmentsAccuracy + 554*EarpiecesAccuracy,
-    554*EnhancementsAlacrity + 130*AugmentsAlacrity + 554*EarpiecesAlacrity + 577*Implants1Alacrity + 577*Implants2Alacrity])
-
+    554*EnhancementsAlacrity + 130*AugmentsAlacrity + 554*EarpiecesAlacrity + 577*Implants1Alacrity + 577*Implants2Alacrity,
+    554*EnhancementsCritical + 130*AugmentsCritical + 554*EarpiecesCritical + 577*Implants1Critical + 577*Implants2Critical + 41*CrystalsCritical], weights = [1,1,0])
+    
 # solve and display
-m.solve().display()
 print("\n")
+m.solve().display()
 print("\nSolution values:")
 print("Accuracy: ", setAccuracy.solution_value)
 print("Alacrity: ", setAlacrity.solution_value)
