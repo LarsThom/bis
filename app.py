@@ -1,15 +1,28 @@
 import sys
-import json
 from docplex.mp.model import Model
-from docplex.mp.relax_linear import LinearRelaxer
+
+list_critical = ['critical', 'crit', 'c']
+list_alacrity = ['alacrity', 'alac', 'a']
 
 # read accuracy, alacrity and implants
-
 GOAL_ACCURACY = int(input("Enter Accuracy: "))
 GOAL_ALACRITY = int(input("Enter Alacrity: "))
-print("Implants: either critical(also crit, c) or alacrity(also alac, a")
-IMPLANT1 = input("Enter Implant 1: ").lower()
-IMPLANT2 = input("Enter Implant 2: ").lower()
+
+print("Implants: either 'critical'(also 'crit', 'c') or 'alacrity'(also 'alac', 'a')")
+implant1 = input("Enter Implant 1: ").lower()
+implant2 = input("Enter Implant 2: ").lower()
+if implant1 in list_critical:
+    Implants1Critical = 1
+elif implant1 in list_alacrity:
+    Implants1Alacrity = 1
+else:
+    sys.exit('ERROR: ILLEGAL IMPLANTS')
+if implant2 in list_critical:
+    Implants2Critical = 1
+elif implant2 in list_alacrity:
+    Implants2Alacrity = 1
+else:
+    sys.exit('ERROR: ILLEGAL IMPLANTS')
 
 # define model
 m = Model(name='SWTOR 7.1')
@@ -36,34 +49,30 @@ StimsAccuracy = m.binary_var(name='accuracy-stim')
 
 CrystalsCritical = m.integer_var(name='critical-crystal')
 
-list_critical = ['critical', 'crit', 'c']
-list_alacrity = ['alacrity', 'alac', 'a']
-
-if IMPLANT1 in list_alacrity:
-    if IMPLANT2 in list_alacrity:
-        Implants1Alacrity = 1
-        Implants1Critical = 0
-        Implants2Alacrity = 1
-        Implants2Critical = 0
-    elif IMPLANT2 in list_critical:
-        Implants1Alacrity = 1
-        Implants1Critical = 0
-        Implants2Alacrity = 0
-        Implants2Critical = 1
-elif IMPLANT1 in list_critical:
-    if IMPLANT2 in list_alacrity:
-        Implants1Alacrity = 0
-        Implants1Critical = 1
-        Implants2Alacrity = 1
-        Implants2Critical = 0
-    elif IMPLANT2 in list_critical:
-        Implants1Alacrity = 0
-        Implants1Critical = 1
-        Implants2Alacrity = 0
-        Implants2Critical = 1
-else:
-    sys.exit('ERROR: ILLEGAL IMPLANTS')
-
+# if IMPLANT1 in list_alacrity:
+#     if IMPLANT2 in list_alacrity:
+#         Implants1Alacrity = 1
+#         Implants1Critical = 0
+#         Implants2Alacrity = 1
+#         Implants2Critical = 0
+#     elif IMPLANT2 in list_critical:
+#         Implants1Alacrity = 1
+#         Implants1Critical = 0
+#         Implants2Alacrity = 0
+#         Implants2Critical = 1
+# elif IMPLANT1 in list_critical:
+#     if IMPLANT2 in list_alacrity:
+#         Implants1Alacrity = 0
+#         Implants1Critical = 1
+#         Implants2Alacrity = 1
+#         Implants2Critical = 0
+#     elif IMPLANT2 in list_critical:
+#         Implants1Alacrity = 0
+#         Implants1Critical = 1
+#         Implants2Alacrity = 0
+#         Implants2Critical = 1
+# else:
+#     sys.exit('ERROR: ILLEGAL IMPLANTS')
 
 
 # read datafile and set correct values
@@ -126,14 +135,18 @@ CONSTRAINT_AUGMENTS = m.add_constraint(m.sum([AugmentsAccuracy, AugmentsAlacrity
 
 CONSTRAINT_EARPIECE = m.add_constraint(m.sum([EarpiecesAccuracy, EarpiecesAlacrity, EarpiecesCritical]) == 1, ctname='earpiece-constraint')
 
+CONSTRAINT_IMPLANTS = m.add_constraint(m.sum([Implants1Alacrity, Implants1Critical, Implants2Alacrity, Implants2Critical]) ==2, ctname='implant-constraint')
+
 CONSTRAINT_CRYSTAL = m.add_constraint(m.sum([CrystalsCritical]) == 2, ctname='earpiece-constraint')
 
 
 # goal:
-m.set_multi_objective('min', [264*StimsAccuracy + 554*EnhancementsAccuracy + 130*AugmentsAccuracy + 554*EarpiecesAccuracy,
-    554*EnhancementsAlacrity + 130*AugmentsAlacrity + 554*EarpiecesAlacrity + 577*Implants1Alacrity + 577*Implants2Alacrity,
-    554*EnhancementsCritical + 130*AugmentsCritical + 554*EarpiecesCritical + 577*Implants1Critical + 577*Implants2Critical + 41*CrystalsCritical], weights = [1,1,0])
-    
+# m.set_multi_objective('min', [264*StimsAccuracy + 554*EnhancementsAccuracy + 130*AugmentsAccuracy + 554*EarpiecesAccuracy,
+#     554*EnhancementsAlacrity + 130*AugmentsAlacrity + 554*EarpiecesAlacrity + 577*Implants1Alacrity + 577*Implants2Alacrity,
+#     554*EnhancementsCritical + 130*AugmentsCritical + 554*EarpiecesCritical + 577*Implants1Critical + 577*Implants2Critical + 41*CrystalsCritical], weights = [1,1,0])
+
+m.set_objective('max', 554*EnhancementsCritical + 130*AugmentsCritical + 554*EarpiecesCritical + 577*Implants1Critical + 577*Implants2Critical + 41*CrystalsCritical)
+
 # solve and display
 print("\n")
 m.solve().display()
