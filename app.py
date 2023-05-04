@@ -1,6 +1,10 @@
 # last modified: 2023-05-03
 # game version 7.2.1b
+
+# maximizing crit while minimizing overflow of accuracy and alacrity
+
 import sys
+import json
 from docplex.mp.model import Model
 
 list_critical = ['critical', 'crit', 'c']
@@ -13,18 +17,9 @@ GOAL_ALACRITY = int(input("Enter Alacrity: "))
 print("Implants: either 'critical'(also 'crit', 'c') or 'alacrity'(also 'alac', 'a')")
 implant1 = input("Enter Implant 1: ").lower()
 implant2 = input("Enter Implant 2: ").lower()
-# if implant1 in list_critical:
-#     Implants1Critical = 1
-# elif implant1 in list_alacrity:
-#     Implants1Alacrity = 1
-# else:
-#     sys.exit('ERROR: ILLEGAL IMPLANTS')
-# if implant2 in list_critical:
-#     Implants2Critical = 1
-# elif implant2 in list_alacrity:
-#     Implants2Alacrity = 1
-# else:
-#     sys.exit('ERROR: ILLEGAL IMPLANTS')
+
+print("Possible Earpieces: either 'critical', 'alacrity' or 'accuracy'. Can be blank.")
+earpiece = input("Enter desired Earpiece: ").lower()
 
 # define model
 m = Model(name='SWTOR 7.2.1b')
@@ -65,60 +60,45 @@ elif implant1 in list_critical:
 else:
     sys.exit('ERROR: ILLEGAL IMPLANTS')
 
-
-# read datafile and set correct values
-# with open("./data.json", "r") as read_file:
-#     data = json.load(read_file)
-
-# accuracy_dict = {"Enhancements":0, "Augments":0, "Earpieces":0, "Stims":0}
-# alacrity_dict = {"Enhancements":0, "Augments":0, "Earpieces":0, "Implants":0}
-# critical_dict = {"Enhancements":0, "Augments":0, "Earpieces":0, "Implants":0, "Crystals":0}
-
-# for x in accuracy_dict:
-#     accuracy_dict[x] = data[x][0]['Accuracy']
-# for x in alacrity_dict:
-#     alacrity_dict[x] = data[x][0]['Alacrity']
-# for x in critical_dict:
-#     critical_dict[x] = data[x][0]['Critical']
-
-# [accuracy_dict[x] = (data[x][0]['Accuracy']) for x in accuracy_dict]
-# [alacrity_dict[x] = (data[x][0]['Alacrity']) for x in alacrity_dict]
-# [critical_dict[x] = (data[x][0]['Critical']) for x in critical_dict]
-
-# print(accuracy_dict)
-# print(alacrity_dict)
-# print(critical_dict)
-
 # CONSTRAINT VALUES PATCH 7.2.1b:
 # stim          biochem700:   264
 # crystal       purple 136:   41
 # enhancement   purple 336:   589
 # earpiece      purple 336:   589
 # implant       gold 334:     577
-# augment       purple 74:    130
-# augment       gold 77:      108
+# augment       gold 77:      130
+
+# read datafile and set correct values
+data = json.loads(open('data.json').read())
+
+VAL_ENHANCEMENT = data['Gear'][0]['Enhancement']
+VAL_AUGMENT = data['Gear'][0]['Augment']
+VAL_EARPIECE = data['Gear'][0]['Earpiece']
+VAL_IMPLANT = data['Gear'][0]['Implant']
+VAL_CRYSTAL = data['Gear'][0]['Crystal']
+VAL_STIM = data['Gear'][0]['Stim']
 
 # set constraints
 setAccuracy = m.sum([
-    589*EnhancementsAccuracy,
-    130*AugmentsAccuracy,
-    589*EarpiecesAccuracy,
-    264*StimsAccuracy
+    VAL_ENHANCEMENT * EnhancementsAccuracy,
+    VAL_AUGMENT * AugmentsAccuracy,
+    VAL_EARPIECE * EarpiecesAccuracy,
+    VAL_STIM * StimsAccuracy
 ])
 setAlacrity = m.sum([
-    589*EnhancementsAlacrity,
-    130*AugmentsAlacrity,
-    # 589*EarpiecesAlacrity,
-    577*Implants1Alacrity,
-    577*Implants2Alacrity
+    VAL_ENHANCEMENT * EnhancementsAlacrity,
+    VAL_AUGMENT * AugmentsAlacrity,
+    VAL_EARPIECE * EarpiecesAlacrity,
+    VAL_IMPLANT * Implants1Alacrity,
+    VAL_IMPLANT * Implants2Alacrity
 ])
 setCritical = m.sum([
-    589*EnhancementsCritical,
-    130*AugmentsCritical,
-    # 589*EarpiecesCritical,
-    577*Implants1Critical,
-    577*Implants2Critical,
-    41*CrystalsCritical
+    VAL_ENHANCEMENT * EnhancementsCritical,
+    VAL_AUGMENT * AugmentsCritical,
+    VAL_EARPIECE * EarpiecesCritical,
+    VAL_IMPLANT * Implants1Critical,
+    VAL_IMPLANT * Implants2Critical,
+    VAL_CRYSTAL * CrystalsCritical
 ])
 
 CONSTRAINT_ACCURACY = m.add_constraint(
@@ -136,44 +116,55 @@ CONSTRAINT_ENHANCEMENTS = m.add_constraint(m.sum(
 CONSTRAINT_AUGMENTS = m.add_constraint(m.sum(
     [AugmentsAccuracy, AugmentsAlacrity, AugmentsCritical]) == 14, ctname='augment-constraint')
 
-CONSTRAINT_EARPIECE = m.add_constraint(m.sum(
-    [EarpiecesAccuracy]) == 1, ctname='earpiece-constraint')
-# [EarpiecesAccuracy, EarpiecesAlacrity, EarpiecesCritical]) == 1, ctname='earpiece-constraint')
-
-# CONSTRAINT_IMPLANTS = m.add_constraint(m.sum(
-#     [Implants1Alacrity, Implants1Critical, Implants2Alacrity, Implants2Critical]) == 2, ctname='implant-constraint')
+if earpiece == "alacrity":
+    CONSTRAINT_EARPIECE = m.add_constraint(
+        m.sum([EarpiecesAlacrity]) == 1, ctname='earpiece-constraint')
+    CONSTRAINT_EARPIECE_REV = m.add_constraint(m.sum(
+        [EarpiecesAccuracy, EarpiecesCritical]) == 0, ctname='earpiece-constraint-rev')
+elif earpiece == "accuracy":
+    CONSTRAINT_EARPIECE = m.add_constraint(
+        m.sum([EarpiecesAccuracy]) == 1, ctname='earpiece-constraint')
+    CONSTRAINT_EARPIECE_REV = m.add_constraint(m.sum(
+        [EarpiecesAlacrity, EarpiecesCritical]) == 0, ctname='earpiece-constraint-rev')
+elif earpiece == "critical":
+    CONSTRAINT_EARPIECE = m.add_constraint(
+        m.sum([EarpiecesCritical]) == 1, ctname='earpiece-constraint')
+    CONSTRAINT_EARPIECE = m.add_constraint(m.sum(
+        [EarpiecesAlacrity, EarpiecesAccuracy]) == 0, ctname='earpiece-constraint-rev')
+elif earpiece == "":
+    CONSTRAINT_EARPIECE = m.add_constraint(m.sum(
+        [EarpiecesCritical, EarpiecesAccuracy, EarpiecesAlacrity]) == 1, ctname='earpiece-constraint')
+else:
+    sys.exit("ERROR: ILLEGAL EARPIECE")
 
 CONSTRAINT_CRYSTAL = m.add_constraint(
     m.sum([CrystalsCritical]) == 2, ctname='earpiece-constraint')
 
 if implants == "ac":
-    print("ac")
     CONSTRAINT_IMPLANTS = m.add_constraint(
         m.sum([Implants1Alacrity, Implants2Critical]) == 2, ctname='implant-constraint')
     CONSTRAINT_IMPLANTS_REV = m.add_constraint(
         m.sum([Implants1Critical, Implants2Alacrity]) == 0, ctname='implant-constraint-rev')
 elif implants == "cc":
-    print("cc")
     CONSTRAINT_IMPLANTS = m.add_constraint(
         m.sum([Implants1Critical, Implants2Critical]) == 2, ctname='implant-constraint')
     CONSTRAINT_IMPLANTS_REV = m.add_constraint(
         m.sum([Implants1Alacrity, Implants2Alacrity]) == 0, ctname='implant-constraint-rev')
 elif implants == "aa":
-    print("aa")
     CONSTRAINT_IMPLANTS = m.add_constraint(
         m.sum([Implants1Alacrity, Implants2Alacrity]) == 2, ctname='implant-constraint')
     CONSTRAINT_IMPLANTS_REV = m.add_constraint(
         m.sum([Implants1Critical, Implants2Critical]) == 0, ctname='implant-constraint-rev')
 
-# goal:
-# m.set_multi_objective('min', [264*StimsAccuracy + 554*EnhancementsAccuracy + 130*AugmentsAccuracy + 554*EarpiecesAccuracy,
-#     554*EnhancementsAlacrity + 130*AugmentsAlacrity + 554*EarpiecesAlacrity + 577*Implants1Alacrity + 577*Implants2Alacrity,
-#     554*EnhancementsCritical + 130*AugmentsCritical + 554*EarpiecesCritical + 577*Implants1Critical + 577*Implants2Critical + 41*CrystalsCritical], weights = [1,1,0])
-
-m.set_objective('max', 589*EnhancementsCritical + 130*AugmentsCritical +
-                577*Implants1Critical + 577*Implants2Critical + 41*CrystalsCritical)
-# m.set_objective('max', 589*EnhancementsCritical + 130*AugmentsCritical + 589 *
-#                 EarpiecesCritical + 577*Implants1Critical + 577*Implants2Critical + 41*CrystalsCritical)
+# set goal:
+m.set_objective('max',
+                VAL_ENHANCEMENT * EnhancementsCritical +
+                VAL_AUGMENT * AugmentsCritical +
+                VAL_EARPIECE * EarpiecesCritical +
+                VAL_IMPLANT * Implants1Critical +
+                VAL_IMPLANT * Implants2Critical +
+                VAL_CRYSTAL * CrystalsCritical
+                )
 
 # solve and display
 print("\n")

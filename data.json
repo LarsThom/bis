@@ -1,41 +1,14 @@
 {
     "Version": 0.1,
-    "SWTORVersion": 7.1,
-    "Enhancements": [
+    "SWTORVersion": "7.2.1b",
+    "Gear": [
         {
-            "Alacrity": 554,
-            "Critical": 554,
-            "Accuracy": 554
-        }
-    ],
-    "Augments": [
-        {
-            "Accuracy": 130,
-            "Alacrity": 130,
-            "Critical": 130
-        }
-    ],
-    "Earpieces": [
-        {
-            "Critical": 554,
-            "Alacrity": 554,
-            "Accuracy": 554
-        }
-    ],
-    "Implants": [
-        {
-            "Critical": 577,
-            "Alacrity": 577
-        }
-    ],
-    "Crystals": [
-        {
-            "Critical": 41
-        }
-    ],
-    "Stims": [
-        {
-            "Accuracy": 264
+            "Enhancement": 589,
+            "Earpiece": 589,
+            "Implant": 577,
+            "Augment": 130,
+            "Crystal": 41,
+            "Stim": 264
         }
     ]
 }
