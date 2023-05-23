@@ -1,4 +1,3 @@
-# last modified: 2023-05-03
 # game version 7.2.1b
 
 # maximizing crit while minimizing overflow of accuracy and alacrity
